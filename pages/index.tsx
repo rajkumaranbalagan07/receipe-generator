@@ -1,124 +1,107 @@
 import Image from 'next/image'
 import { Inter } from 'next/font/google'
+import Dropdown, { Option } from '@/components/Dropdown'
+import { useState } from 'react';
+import Button from '@/components/Button';
+import TextArea from '@/components/TextArea';
+import { Configuration, OpenAIApi } from "openai";
+import Loader from '@/components/Loader';
+import Input from '@/components/Input';
 
 const inter = Inter({ subsets: ['latin'] })
 
 export default function Home() {
+  const cuisineOptions: Option[] = [
+    { value: 'italian', label: 'Italian' },
+    { value: 'mexican', label: 'Mexican' },
+    { value: 'indian', label: 'Indian' },
+    { value: 'chinese', label: 'Chinese' },
+    { value: 'mediterranean', label: 'Mediterranean' },
+  ];
+
+  const dietaryOptions: Option[] = [
+    { value: 'vegan', label: 'Vegan' },
+    { value: 'vegetarian', label: 'Vegetarian' },
+    { value: 'glutenFree', label: 'Gluten-free' },
+    { value: 'dairyFree', label: 'Dairy-free' },
+    { value: 'lowCarb', label: 'Low-carb' },
+  ];
+
+  const ingredientOptions: Option[] = [
+    { value: 'chicken', label: 'Chicken' },
+    { value: 'tofu', label: 'Tofu' },
+    { value: 'bellPeppers', label: 'Bell peppers' },
+    { value: 'quinoa', label: 'Quinoa' },
+    { value: 'sweetPotatoes', label: 'Sweet potatoes' },
+  ];
+
+  const [output, setOutput] = useState('');
+  const [selectedCuisine, setSelectedCuisine] = useState('');
+  const [selectedDietary, setSelectedDietary] = useState('');
+  const [selectedIngredient, setSelectedIngredient] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [inputValue, setInputValue] = useState("");
+  const [rows, setRows] = useState(0);
+
+  const handleCuisineChange = (value: string) => {
+    setSelectedCuisine(value);
+  };
+
+  const handleDietaryChange = (value: string) => {
+    setSelectedDietary(value);
+  };
+
+  const handleIngredientChange = (value: string) => {
+    setSelectedIngredient(value);
+  };
+
+
+  const handleInputButtonClick = (value: string) => {
+    setInputValue(value);
+  };
+
+  const fetchOpenAIOutput = async () => {
+
+    setIsLoading(true); // set loading to true before making the API call
+    console.log("process.env.OPEN_API_KEY================================",process.env.OPEN_API_KEY);
+    const configuration = new Configuration({
+      apiKey: process.env.OPEN_API_KEY
+    });
+    delete configuration.baseOptions.headers['User-Agent'];
+
+    const openai = new OpenAIApi(configuration);
+
+    const completion = await openai.createChatCompletion({
+      model: "gpt-3.5-turbo",
+      messages: [{
+        role: "user", content: `Act a chef expert suggest delicious recipes that includes foods which are nutritionally beneficial but also easy & not 
+      time consuming enough therefore suitable for busy people like us among other factors such as cost effectiveness 
+      so overall dish ends up being healthy yet economical at same time based on the content ${selectedCuisine
+          } and the ${selectedIngredient}
+        and the ${selectedDietary}, give me the detailed receipe details ${inputValue}`
+      }],
+    });
+
+
+    console.log(completion.data.choices[0].message!['content']);
+    setOutput(completion.data.choices[0].message!['content'] as any);
+    setRows(completion.data.choices[0].message!['content'].split("\n").length)
+    setIsLoading(false); // set loading to false after receiving the response
+  };
+
   return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-24">
-      <div className="z-10 w-full max-w-5xl items-center justify-between font-mono text-sm lg:flex">
-        <p className="fixed left-0 top-0 flex w-full justify-center border-b border-gray-300 bg-gradient-to-b from-zinc-200 pb-6 pt-8 backdrop-blur-2xl dark:border-neutral-800 dark:bg-zinc-800/30 dark:from-inherit lg:static lg:w-auto  lg:rounded-xl lg:border lg:bg-gray-200 lg:p-4 lg:dark:bg-zinc-800/30">
-          Get started by editing&nbsp;
-          <code className="font-mono font-bold">pages/index.tsx</code>
-        </p>
-        <div className="fixed bottom-0 left-0 flex h-48 w-full items-end justify-center bg-gradient-to-t from-white via-white dark:from-black dark:via-black lg:static lg:h-auto lg:w-auto lg:bg-none">
-          <a
-            className="pointer-events-none flex place-items-center gap-2 p-8 lg:pointer-events-auto lg:p-0"
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{' '}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className="dark:invert"
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
+    <div className="min-h-screen bg-gradient-to-r from-purple-400 via-pink-500 to-red-500 ">
+      <main className='flex items-center justify-center'>
+        <div className="flex flex-col  p-20 space-y-8 space-x-8 rounded-lg bg-amber-70 w-1/2" >
+          <h1 className='text-5xl  text-white text-center'>Chef GPT</h1>
+          <Dropdown options={cuisineOptions} onSelect={handleCuisineChange} />
+          <Dropdown options={dietaryOptions} onSelect={handleDietaryChange} />
+          <Dropdown options={ingredientOptions} onSelect={handleIngredientChange} />
+          <Input onButtonClick={handleInputButtonClick} />
+          <Button onClick={fetchOpenAIOutput} disabled={isLoading}>{isLoading ? 'Preparing the Receipe........' : 'Get Recipe'}</Button>
+          {isLoading ? <Loader /> : <TextArea value={output} rows={rows} />}
         </div>
-      </div>
-
-      <div className="relative flex place-items-center before:absolute before:h-[300px] before:w-[480px] before:-translate-x-1/2 before:rounded-full before:bg-gradient-radial before:from-white before:to-transparent before:blur-2xl before:content-[''] after:absolute after:-z-20 after:h-[180px] after:w-[240px] after:translate-x-1/3 after:bg-gradient-conic after:from-sky-200 after:via-blue-200 after:blur-2xl after:content-[''] before:dark:bg-gradient-to-br before:dark:from-transparent before:dark:to-blue-700/10 after:dark:from-sky-900 after:dark:via-[#0141ff]/40 before:lg:h-[360px]">
-        <Image
-          className="relative dark:drop-shadow-[0_0_0.3rem_#ffffff70] dark:invert"
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
-      </div>
-
-      <div className="mb-32 grid text-center lg:mb-0 lg:grid-cols-4 lg:text-left">
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`${inter.className} mb-3 text-2xl font-semibold`}>
-            Docs{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p
-            className={`${inter.className} m-0 max-w-[30ch] text-sm opacity-50`}
-          >
-            Find in-depth information about Next.js features and API.
-          </p>
-        </a>
-
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`${inter.className} mb-3 text-2xl font-semibold`}>
-            Learn{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p
-            className={`${inter.className} m-0 max-w-[30ch] text-sm opacity-50`}
-          >
-            Learn about Next.js in an interactive course with&nbsp;quizzes!
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`${inter.className} mb-3 text-2xl font-semibold`}>
-            Templates{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p
-            className={`${inter.className} m-0 max-w-[30ch] text-sm opacity-50`}
-          >
-            Discover and deploy boilerplate example Next.js&nbsp;projects.
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`${inter.className} mb-3 text-2xl font-semibold`}>
-            Deploy{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p
-            className={`${inter.className} m-0 max-w-[30ch] text-sm opacity-50`}
-          >
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
-    </main>
+      </main>
+    </div>
   )
 }
