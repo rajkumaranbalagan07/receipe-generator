@@ -63,7 +63,6 @@ export default function Home() {
   const fetchOpenAIOutput = async () => {
 
     setIsLoading(true); // set loading to true before making the API call
-    console.log("process.env.OPEN_API_KEY================================",process.env.OPEN_API_KEY);
     const configuration = new Configuration({
       apiKey: process.env.OPEN_API_KEY
     });

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-type Option = {
+export type Option = {
   value: string;
   label: string;
 };
